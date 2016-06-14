@@ -1,0 +1,68 @@
+CREATE(C1:Character{name:'Dragon'})
+CREATE(C2:Character{name:'Tiger'})
+CREATE(C3:Character{name:'Human'})
+CREATE(A1:Ability{name:'Die'})
+CREATE(A2:Ability{name:'Fire Breath'})
+CREATE(A3:Ability{name:'Bite'})
+CREATE(A4:Ability{name:'Shoot'})
+CREATE(E1:Element{name:'Fire'})
+CREATE(E2:Element{name:'Beer'})
+CREATE(E3:Element{name:'Meat'})
+CREATE(E4:Element{name:'Temp'})
+CREATE(E5:Element{name:'Animal'})
+CREATE(C1)-[:Can]->(A1)
+CREATE(C1)-[:Can]->(A2)
+CREATE(C2)-[:Can]->(A2)
+CREATE(C2)-[:Can]->(A3)
+CREATE(C3)-[:Can]->(A2)
+CREATE(C3)-[:Can]->(A4)
+CREATE(A1)-[:HasElement]->(E1)-[:EffectiveAgainst]->(E2)
+CREATE(C1)-[:HasElement]->(E2)
+CREATE(A1)-[:HasElement]->(E2)
+CREATE(A2)-[:HasElement]->(E2)
+CREATE(A2)-[:HasElement]->(E4)-[:EffectiveAgainst]->(E2)
+CREATE(A3)-[:HasElement]->(E3)-[:EffectiveAgainst]->(E5)
+CREATE(A4)-[:HasElement]->(E5);
+
+(1)
+MATCH (c)-[:Can]->(a)-[:HasElement]->(e)
+WHERE e.name='Fire'
+RETURN c.name AS character,a.name AS ability
+ORDER BY character,ability;
+
+(2)
+MATCH (c)-[:Can]->(a)-[:HasElement]->(e)
+WITH c,COLLECT(e) AS TEMP
+WHERE NOT ANY (x IN TEMP WHERE (NOT x.name='Physical'))
+RETURN c.name
+ORDER BY c.name;
+
+(3)
+MATCH (c)-[:Can]->(a)-[:HasElement]->(e)
+WITH e,COUNT(DISTINCT c) AS number
+RETURN e.name AS name,number
+ORDER BY number DESC,e.name
+LIMIT 1;
+
+(4)
+MATCH (c1:Character)
+OPTIONAL MATCH (c1)-[:Can]->(a1)-[:HasElement]->(e1)
+WITH c1,COUNT(DISTINCT e1) AS ele1_number,COLLECT(DISTINCT e1) AS ele1_group
+MATCH (c2:Character)
+WHERE c1.name<c2.name
+OPTIONAL MATCH (c2)-[:Can]->(a2)-[:HasElement]->(e2)
+WHERE NOT (e2 IN ele1_group)
+RETURN c1.name AS character1,c2.name AS character2,ele1_number+count(distinct e2) AS number
+ORDER BY number DESC,c1.name,c2.name
+LIMIT 10;
+
+(5)
+OPTIONAL MATCH
+(a:Ability)-[:HasElement]->(e1)-[:EffectiveAgainst]->(e2)
+WITH e2,a
+ORDER BY a.name
+RETURN e2.name AS name,COLLECT(DISTINCT a.name) AS abilities
+ORDER BY name;
+
+
+
